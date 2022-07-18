@@ -51,9 +51,10 @@ impl Expr {
         })
     }
 
-    pub fn assign_ids(&mut self) {
+    pub fn assign_ids(mut self) -> Expr {
         let mut id_gen = 0;
         self.assign_ids_rec(&mut id_gen);
+        self
     }
 
     fn assign_ids_rec(&mut self, used_id_space: &mut u32) {
