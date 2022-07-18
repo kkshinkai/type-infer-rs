@@ -1,9 +1,15 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
+pub mod ty_ctxt;
+pub mod ty_scheme;
+pub mod subst;
+
 use std::fmt;
 
-#[derive(Debug, Clone, Eq, PartialEq)]
+use self::subst::Subst;
+
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Ty {
     Var(TyVar),
     Int,
@@ -29,6 +35,25 @@ impl Ty {
     }
 }
 
+impl Ty {
+    pub fn apply(&self, subst: &Subst) -> Ty {
+        match self {
+            Ty::Var(name) => {
+                match subst.get(name) {
+                    Some(found_ty) if &found_ty != self => {
+                        found_ty.apply(subst)
+                    }
+                    _ => self.clone(),
+                }
+            }
+            Ty::Arrow(param_ty, ret_ty) => {
+                Ty::mk_arrow(param_ty.apply(subst), ret_ty.apply(subst))
+            }
+            _ => self.clone(),
+        }
+    }
+}
+
 impl fmt::Display for Ty {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -43,43 +68,27 @@ impl fmt::Display for Ty {
     }
 }
 
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TyScheme {
-    pub vars: Vec<TyVar>,
-    pub ty: Ty,
-}
-
-impl TyScheme {
-    pub fn mk_forall(vars: Vec<TyVar>, ty: Ty) -> TyScheme {
-        TyScheme { vars, ty }
-    }
-}
-
-impl fmt::Display for TyScheme {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "forall {} . {}",
-            self.vars.iter()
-                .map(|var| &var.name[..])
-                .collect::<Vec<&str>>()
-                .join(" "),
-            self.ty
-        )
-    }
-}
-
-#[derive(Debug, Clone, Eq, PartialEq)]
-pub struct TyVar {
-    pub name: String,
+#[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
+pub enum TyVar {
+    Name(String),
+    Unknown(u32),
 }
 
 impl TyVar {
     pub fn new(name: String) -> TyVar {
-        TyVar { name }
+        TyVar::Name(name)
+    }
+
+    pub fn unknown(id: u32) -> TyVar {
+        TyVar::Unknown(id)
     }
 }
 
 impl fmt::Display for TyVar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.name)
+        match self {
+            TyVar::Name(name) => write!(f, "{}", name),
+            TyVar::Unknown(_id) => write!(f, "?"),
+        }
     }
 }

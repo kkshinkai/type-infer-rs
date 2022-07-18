@@ -3,13 +3,9 @@
 //
 // $ cargo run --example pprint
 
-// TODO:
-// - Improve the `Display` implementation for `Expr`;
-// - Add macro for initializing `Expr`;
-
 use type_infer_rs::{
     expr::{expr::{Expr, Ident}, lit::Lit},
-    ty::{Ty, TyVar, TyScheme}
+    ty::{Ty, TyVar, ty_scheme::TyScheme}
 };
 
 fn main() {
