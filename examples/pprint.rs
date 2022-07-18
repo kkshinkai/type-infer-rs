@@ -10,15 +10,12 @@
 use type_infer_rs::expr::*;
 
 fn main() {
-    let expr_kind = ExprKind::Let {
-        name: Ident { name: "number".to_string() },
-        value: Box::new(Expr { kind: ExprKind::Lit(Lit::Int(42)) }),
-        body: Box::new(Expr {
-            kind: ExprKind::Var(Ident { name: "number".to_string() }),
-        }),
-    };
 
-    let expr = Expr { kind: expr_kind };
+    let expr = Expr::new(ExprKind::let_in(
+        Ident::new("number".to_string()),
+        Expr::new(ExprKind::Lit(Lit::Int(42))),
+        Expr::new(ExprKind::Var(Ident::new("number".to_string()))),
+    ));
 
     println!("{}", expr);
 }

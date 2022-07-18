@@ -8,6 +8,12 @@ pub struct Expr {
     pub kind: ExprKind,
 }
 
+impl Expr {
+    pub fn new(kind: ExprKind) -> Expr {
+        Expr { kind }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum ExprKind {
     Var(Ident),
@@ -15,6 +21,38 @@ pub enum ExprKind {
     App { callee: Box<Expr>, arg: Box<Expr> },
     Abs { param: Ident, body: Box<Expr> },
     Let { name: Ident, value: Box<Expr>, body: Box<Expr> },
+}
+
+impl ExprKind {
+    pub fn var(name: Ident) -> ExprKind {
+        ExprKind::Var(name)
+    }
+
+    pub fn lit(lit: Lit) -> ExprKind {
+        ExprKind::Lit(lit)
+    }
+
+    pub fn app(callee: Expr, arg: Expr) -> ExprKind {
+        ExprKind::App {
+            callee: Box::new(callee),
+            arg: Box::new(arg),
+        }
+    }
+
+    pub fn abs(param: Ident, body: Expr) -> ExprKind {
+        ExprKind::Abs {
+            param,
+            body: Box::new(body),
+        }
+    }
+
+    pub fn let_in(name: Ident, value: Expr, body: Expr) -> ExprKind {
+        ExprKind::Let {
+            name,
+            value: Box::new(value),
+            body: Box::new(body),
+        }
+    }
 }
 
 impl fmt::Display for Expr {
@@ -52,6 +90,12 @@ impl fmt::Display for Lit {
 #[derive(Debug, Clone, PartialEq)]
 pub struct Ident {
     pub name: String,
+}
+
+impl Ident {
+    pub fn new(name: String) -> Ident {
+        Ident { name }
+    }
 }
 
 impl fmt::Display for Ident {
