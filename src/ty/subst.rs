@@ -24,11 +24,11 @@ impl Subst {
     }
 
     /// Adds a new mapping to the substitution.
-    pub fn add(&mut self, var: TyVar, ty: Ty) {
+    pub fn insert(&mut self, var: TyVar, ty: Ty) {
         self.mapping.insert(var, ty);
     }
 
-/*
+
     /// Composes anonther substitution with this one.
     ///
     /// The result of composing two substitutions `S1` and `S2` is a new
@@ -38,18 +38,31 @@ impl Subst {
     /// For example,
     ///
     /// ```text
-    /// S1 = [t2 ↦ int]
-    /// S2 = [t1 ↦ int -> t2]
-    /// S1 ∘ S2 = [t2 ↦ int, t1 ↦ int -> int]
+    /// S1 = [t2: int]
+    /// S2 = [t1: int -> t2]
+    /// S1 ∘ S2 = [t2: int, t1: int -> int]
     /// ```
     ///
     /// Note that `S1 ∘ S2` is not just the union of the mappings in `S1` and
     /// `S2`, i.e., it is not equal to `[t2 ↦ int, t1 ↦ int -> t2]`.
     pub fn compose(&self, other: &Subst) -> Subst {
-        other.mapping.iter()
-            .map(|(var, ty)| ty.apply(self))
+        let substituted = other.mapping
+            .iter()
+            .map(|(var, ty)| (var, ty.apply(self)));
+
+        let mut subst = Subst::new();
+
+        for (var, ty) in self.mapping.iter() {
+            subst.insert(var.clone(), ty.clone());
+        }
+
+        for (var, ty) in substituted {
+            subst.insert(var.clone(), ty);
+        }
+
+        subst
     }
-*/
+
 }
 
 impl fmt::Display for Subst {
@@ -68,7 +81,7 @@ macro_rules! subst {
     ($($var:expr => $ty:expr),* $(,)?) => {{
         let mut subst = $crate::ty::subst::Subst::new();
         for (var, ty) in [$(($var, $ty),)*].into_iter() {
-            subst.add(var, ty);
+            subst.insert(var, ty);
         }
         subst
     }};
