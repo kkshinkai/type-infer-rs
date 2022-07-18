@@ -20,6 +20,61 @@ impl Expr {
             id: ExprId::dummy(),
         }
     }
+
+    pub fn mk_var(name: Ident) -> Expr {
+        Expr::new(ExprKind::Var(name))
+    }
+
+    pub fn mk_lit(lit: Lit) -> Expr {
+        Expr::new(ExprKind::Lit(lit))
+    }
+
+    pub fn mk_app(callee: Expr, arg: Expr) -> Expr {
+        Expr::new(ExprKind::App {
+            callee: Box::new(callee),
+            arg: Box::new(arg),
+        })
+    }
+
+    pub fn mk_abs(param: Ident, body: Expr) -> Expr {
+        Expr::new(ExprKind::Abs {
+            param,
+            body: Box::new(body),
+        })
+    }
+
+    pub fn mk_let(name: Ident, value: Expr, body: Expr) -> Expr {
+        Expr::new(ExprKind::Let {
+            name,
+            value: Box::new(value),
+            body: Box::new(body),
+        })
+    }
+
+    pub fn assign_ids(&mut self) {
+        let mut id_gen = 0;
+        self.assign_ids_rec(&mut id_gen);
+    }
+
+    fn assign_ids_rec(&mut self, used_id_space: &mut u32) {
+        *used_id_space += 1;
+        self.id = ExprId::from_u32(*used_id_space);
+        match &mut self.kind {
+            ExprKind::Var(_) => {}
+            ExprKind::Lit(_) => {}
+            ExprKind::App { callee, arg } => {
+                callee.assign_ids_rec(used_id_space);
+                arg.assign_ids_rec(used_id_space);
+            }
+            ExprKind::Abs { param: _, body } => {
+                body.assign_ids_rec(used_id_space);
+            }
+            ExprKind::Let { name: _, value, body } => {
+                value.assign_ids_rec(used_id_space);
+                body.assign_ids_rec(used_id_space);
+            }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -29,38 +84,6 @@ pub enum ExprKind {
     App { callee: Box<Expr>, arg: Box<Expr> },
     Abs { param: Ident, body: Box<Expr> },
     Let { name: Ident, value: Box<Expr>, body: Box<Expr> },
-}
-
-impl ExprKind {
-    pub fn var(name: Ident) -> ExprKind {
-        ExprKind::Var(name)
-    }
-
-    pub fn lit(lit: Lit) -> ExprKind {
-        ExprKind::Lit(lit)
-    }
-
-    pub fn app(callee: Expr, arg: Expr) -> ExprKind {
-        ExprKind::App {
-            callee: Box::new(callee),
-            arg: Box::new(arg),
-        }
-    }
-
-    pub fn abs(param: Ident, body: Expr) -> ExprKind {
-        ExprKind::Abs {
-            param,
-            body: Box::new(body),
-        }
-    }
-
-    pub fn let_in(name: Ident, value: Expr, body: Expr) -> ExprKind {
-        ExprKind::Let {
-            name,
-            value: Box::new(value),
-            body: Box::new(body),
-        }
-    }
 }
 
 impl fmt::Display for Expr {

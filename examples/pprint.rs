@@ -7,9 +7,19 @@
 // - Improve the `Display` implementation for `Expr`;
 // - Add macro for initializing `Expr`;
 
-use type_infer_rs::program;
+use type_infer_rs::expr::{expr::{Expr, Ident}, lit::Lit};
 
 fn main() {
-    let expr = program!("abs");
-    println!("{:?}", expr);
+    let mut expr = Expr::mk_let(
+        Ident::new("id".to_string()),
+        Expr::mk_abs(Ident::new("x".to_string()), Expr::mk_var(Ident::new("x".to_string()))),
+        Expr::mk_app(
+            Expr::mk_var(Ident::new("id".to_string())),
+            Expr::mk_lit(Lit::Int(42)),
+        ),
+    );
+
+    expr.assign_ids();
+
+    println!("{:#?}", expr);
 }
