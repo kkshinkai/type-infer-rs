@@ -3,7 +3,9 @@
 
 use std::fmt;
 
-use crate::expr_id::ExprId;
+use crate::expr::expr_id::ExprId;
+
+use super::lit::Lit;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
@@ -74,21 +76,6 @@ impl fmt::Display for Expr {
                 write!(f, "(abs {} -> {})", param, body),
             ExprKind::Let { name, value, body } =>
                 write!(f, "(let {} = {} in {})", name, value, body),
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Lit {
-    Int(i32),
-    Bool(bool),
-}
-
-impl fmt::Display for Lit {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Lit::Int(i) => write!(f, "{}", i),
-            Lit::Bool(b) => write!(f, "{}", b),
         }
     }
 }

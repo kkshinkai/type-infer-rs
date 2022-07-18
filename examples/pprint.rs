@@ -7,15 +7,9 @@
 // - Improve the `Display` implementation for `Expr`;
 // - Add macro for initializing `Expr`;
 
-use type_infer_rs::expr::*;
+use type_infer_rs::program;
 
 fn main() {
-
-    let expr = Expr::new(ExprKind::let_in(
-        Ident::new("number".to_string()),
-        Expr::new(ExprKind::Lit(Lit::Int(42))),
-        Expr::new(ExprKind::Var(Ident::new("number".to_string()))),
-    ));
-
-    println!("{}", expr);
+    let expr = program!("abs");
+    println!("{:?}", expr);
 }
