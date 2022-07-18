@@ -3,14 +3,20 @@
 
 use std::fmt;
 
+use crate::expr_id::ExprId;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Expr {
     pub kind: ExprKind,
+    pub id: ExprId,
 }
 
 impl Expr {
     pub fn new(kind: ExprKind) -> Expr {
-        Expr { kind }
+        Expr {
+            kind,
+            id: ExprId::dummy(),
+        }
     }
 }
 
