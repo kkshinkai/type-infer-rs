@@ -4,7 +4,7 @@
 use std::{collections::BTreeMap, fmt};
 
 use super::{TyVar, Ty};
-use crate::ty::types::Types;
+use crate::{subst, ty::types::Types, error::{TyResult, TyError}};
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Subst {
@@ -44,6 +44,40 @@ impl Subst {
     /// Removes a mapping from the substitution.
     pub fn remove(&mut self, var: &TyVar) -> Option<Ty> {
         self.mapping.remove(var)
+    }
+
+    /// Binds a type variable to a type and return that binding as a
+    /// substitution, but avoids binding a variable to itself and performs the
+    /// occurs check. Constraints like `α = α` or `α = α -> β` are not allowed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[macro_use] extern crate type_infer_rs;
+    /// # use type_infer_rs::ty::{Ty, TyVar, subst::Subst};
+    /// // bind(a, int) = [a: int]
+    /// assert_eq!(
+    ///     Subst::bind(TyVar::new("a".to_string()), Ty::mk_int()),
+    ///     Ok(subst![TyVar::new("a".to_string()) => Ty::mk_int()]),
+    /// );
+    ///
+    /// // bind(a, a -> b) = error
+    /// assert!(Subst::bind(
+    ///     TyVar::new("a".to_string()),
+    ///     Ty::mk_arrow(
+    ///         Ty::mk_var(TyVar::new("a".to_string())),
+    ///         Ty::mk_var(TyVar::new("b".to_string())),
+    ///     ),
+    /// ).is_err());
+    /// ```
+    pub fn bind(var: TyVar, ty: Ty) -> TyResult<Subst> {
+        match ty {
+            Ty::Var(ref v) if v == &var =>
+                Ok(Subst::identity()),
+            _ if ty.ftv().contains(&var) =>
+                Err(TyError::Unknown(format!("occur check fails {var} in {ty}"))),
+            _ => Ok(subst![var => ty]),
+        }
     }
 
     /// Composes anonther substitution with this one.

@@ -4,3 +4,4 @@
 pub mod expr;
 pub mod ty;
 pub mod infer;
+pub mod error;

@@ -3,6 +3,8 @@
 
 use std::collections::BTreeMap;
 
+struct InferCtxt;
+
 // NOTE: Don't public this trait, `BTreeMap<_, _>` does not need this ad-hoc
 // union method.
 trait Union {
