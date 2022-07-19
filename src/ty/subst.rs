@@ -84,22 +84,24 @@ impl Subst {
     pub fn compose(&self, other: &Subst) -> Subst {
         let mut subst = Subst::identity();
 
-        self.mapping.iter()
+        self.iter()
             .for_each(|(var, ty)| subst.insert(var.clone(), ty.clone()));
 
-        other.mapping
-            .iter()
+        other.iter()
             .for_each(|(var, ty)| subst.insert(var.clone(), ty.apply(self)));
 
         subst
     }
 
+    pub fn iter(&self) -> impl Iterator<Item = (&TyVar, &Ty)> {
+        self.mapping.iter()
+    }
 }
 
 impl fmt::Display for Subst {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "[{}]",
-            self.mapping.iter()
+            self.iter()
                 .map(|(var, ty)| format!("{}: {}", var, ty))
                 .collect::<Vec<String>>()
                 .join(", ")
