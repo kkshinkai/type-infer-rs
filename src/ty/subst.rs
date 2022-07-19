@@ -46,40 +46,6 @@ impl Subst {
         self.mapping.remove(var)
     }
 
-    /// Binds a type variable to a type and return that binding as a
-    /// substitution, but avoids binding a variable to itself and performs the
-    /// occurs check. Constraints like `α = α` or `α = α -> β` are not allowed.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// # #[macro_use] extern crate type_infer_rs;
-    /// # use type_infer_rs::ty::{Ty, TyVar, subst::Subst};
-    /// // bind(a, int) = [a: int]
-    /// assert_eq!(
-    ///     Subst::bind(TyVar::new("a".to_string()), Ty::mk_int()),
-    ///     Ok(subst![TyVar::new("a".to_string()) => Ty::mk_int()]),
-    /// );
-    ///
-    /// // bind(a, a -> b) = error
-    /// assert!(Subst::bind(
-    ///     TyVar::new("a".to_string()),
-    ///     Ty::mk_arrow(
-    ///         Ty::mk_var(TyVar::new("a".to_string())),
-    ///         Ty::mk_var(TyVar::new("b".to_string())),
-    ///     ),
-    /// ).is_err());
-    /// ```
-    pub fn bind(var: TyVar, ty: Ty) -> TyResult<Subst> {
-        match ty {
-            Ty::Var(ref v) if v == &var =>
-                Ok(Subst::identity()),
-            _ if ty.ftv().contains(&var) =>
-                Err(TyError::Unknown(format!("occur check fails {var} in {ty}"))),
-            _ => Ok(subst![var => ty]),
-        }
-    }
-
     /// Composes anonther substitution with this one.
     ///
     /// The composition `τ + σ` of two substitutions `σ = [x1: t1, ..., xN: tN]`
@@ -130,6 +96,58 @@ impl Subst {
             .for_each(|(var, ty)| subst.insert(var.clone(), ty.apply(self)));
 
         subst
+    }
+
+    /// Binds a type variable to a type and return that binding as a
+    /// substitution, but avoids binding a variable to itself and performs the
+    /// occurs check. Constraints like `α = α` or `α = α -> β` are not allowed.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # #[macro_use] extern crate type_infer_rs;
+    /// # use type_infer_rs::ty::{Ty, TyVar, subst::Subst};
+    /// // bind(a, int) = [a: int]
+    /// assert_eq!(
+    ///     Subst::bind(TyVar::new("a".to_string()), Ty::mk_int()),
+    ///     Ok(subst![TyVar::new("a".to_string()) => Ty::mk_int()]),
+    /// );
+    ///
+    /// // bind(a, a -> b) = error
+    /// assert!(Subst::bind(
+    ///     TyVar::new("a".to_string()),
+    ///     Ty::mk_arrow(
+    ///         Ty::mk_var(TyVar::new("a".to_string())),
+    ///         Ty::mk_var(TyVar::new("b".to_string())),
+    ///     ),
+    /// ).is_err());
+    /// ```
+    pub fn bind(var: TyVar, ty: Ty) -> TyResult<Subst> {
+        match ty {
+            Ty::Var(ref v) if v == &var =>
+                Ok(Subst::identity()),
+            _ if ty.ftv().contains(&var) =>
+                Err(TyError::Unknown(format!("occur check fails {var} in {ty}"))),
+            _ => Ok(subst![var => ty]),
+        }
+    }
+
+    /// Finds the most general set of substitutions that can be found for two
+    /// types. "MGU" means the most general unifier.
+    pub fn mgu(ty1: Ty, ty2: Ty) -> TyResult<Subst> {
+        match (ty1, ty2) {
+            (Ty::Arrow(p1, r1), Ty::Arrow(p2, r2)) => {
+                let s1 = Subst::mgu(*p1, *p2)?;
+                let s2 = Subst::mgu(r1.apply(&s1), r2.apply(&s1))?;
+                Ok(s1.compose(&s2))
+            },
+            (Ty::Var(var), ty) | (ty, Ty::Var(var)) =>
+                Subst::bind(var, ty),
+            (Ty::Int, Ty::Int) | (Ty::Bool, Ty::Bool) =>
+                Ok(Subst::identity()),
+            (ty1, ty2) =>
+                Err(TyError::Unknown(format!("cannot unify {ty1} with {ty2}"))),
+        }
     }
 
     pub fn iter(&self) -> impl Iterator<Item = (&TyVar, &Ty)> {
