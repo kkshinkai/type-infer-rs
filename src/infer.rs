@@ -107,13 +107,13 @@ impl InferCtxt {
             //          Γ ⊢ e0(e1) : τ′
             ExprKind::App { ref callee, ref arg } => {
                 let new_ty = Ty::mk_var(self.new_type_var());
-                let (subst1, ty1) = self.infer_impl(tcx.clone(), &callee)?;
-                let (subst2, ty2) = self.infer_impl(tcx.apply(&subst1), &arg)?;
-                let subst3 = Subst::mgu(
-                    ty1.apply(&subst2),
+                let (s1, ty1) = self.infer_impl(tcx.clone(), &callee)?;
+                let (s2, ty2) = self.infer_impl(tcx.apply(&s1), &arg)?;
+                let s3 = Subst::mgu(
+                    ty1.apply(&s2),
                     Ty::mk_arrow(ty2, new_ty.clone()),
                 )?;
-                Ok((subst3.compose(&subst2).compose(&subst1), new_ty))
+                Ok((s3.compose(&s2).compose(&s1), new_ty))
             },
 
             // Γ ⊢ e0 : σ     Γ, x : σ ⊢ e1 : τ
