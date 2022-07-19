@@ -3,10 +3,13 @@
 
 use std::collections::{BTreeMap, BTreeSet};
 
+use crate::expr::expr::Ident;
+
 use super::{TyVar, ty_scheme::TyScheme, types::Types, subst::Subst};
 
+#[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TyCtxt {
-    types: BTreeMap<TyVar, TyScheme>,
+    types: BTreeMap<Ident, TyScheme>,
 }
 
 impl TyCtxt {
@@ -16,16 +19,16 @@ impl TyCtxt {
         }
     }
 
-    pub fn insert(&mut self, ty_var: TyVar, ty_scheme: TyScheme) {
-        self.types.insert(ty_var, ty_scheme);
+    pub fn insert(&mut self, var: Ident, ty_scheme: TyScheme) {
+        self.types.insert(var, ty_scheme);
     }
 
-    pub fn remove(&mut self, ty_var: &TyVar) -> Option<TyScheme> {
-        self.types.remove(ty_var)
+    pub fn remove(&mut self, var: &Ident) -> Option<TyScheme> {
+        self.types.remove(var)
     }
 
-    pub fn get(&self, ty_var: &TyVar) -> Option<&TyScheme> {
-        self.types.get(ty_var)
+    pub fn get(&self, var: &Ident) -> Option<&TyScheme> {
+        self.types.get(var)
     }
 }
 

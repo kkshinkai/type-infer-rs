@@ -98,7 +98,7 @@ impl fmt::Display for TyVar {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             TyVar::Name(name) => write!(f, "{}", name),
-            TyVar::Unknown(_id) => write!(f, "?"),
+            TyVar::Unknown(id) => write!(f, "?{id}"),
         }
     }
 }

@@ -1,7 +1,7 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ExprId {
     private: u32,
 }
