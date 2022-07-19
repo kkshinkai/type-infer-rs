@@ -11,8 +11,18 @@ pub struct Subst {
 }
 
 impl Subst {
-    /// Creates a new empty substitution `[]`.
-    pub fn new() -> Subst {
+    /// Creates a identity substitution (aka. empty substitution) `[]`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// # use type_infer_rs::ty::{Ty, TyVar, subst::Subst};
+    /// let var_a = Ty::Var(TyVar::new("a".to_string()));
+    ///
+    /// // Identity substitution maps every variable to itself.
+    /// assert_eq!(var_a.apply(&Subst::identity()), var_a);
+    /// ```
+    pub fn identity() -> Subst {
         Subst {
             mapping: BTreeMap::new(),
         }
@@ -25,40 +35,61 @@ impl Subst {
 
     /// Adds a new mapping to the substitution.
     pub fn insert(&mut self, var: TyVar, ty: Ty) {
+        // We named this function `insert` instead of `add` to indicate that
+        // upcoming key-value pairs might overwrite the previous.
         self.mapping.insert(var, ty);
     }
 
 
     /// Composes anonther substitution with this one.
     ///
-    /// The result of composing two substitutions `S1` and `S2` is a new
-    /// substitution `S = S1 ∘ S2` that for all type expressions `e`,
-    /// `S(e) = S1(S2(e))`.
+    /// The composition `τ + σ` of two substitutions `σ = [x1: t1, ..., xN: tN]`
+    /// and `τ = [y1: u1, ..., yM: uM]` is obtained by removing from the
+    /// substitution `[x1: τ(t1), ..., xN: τ(tN), y1: u1, ..., yM: uM]` those
+    /// pairs `yI: uI` for which `yI ∈ {x1, ..., xN}`. The composition of `τ`
+    /// and `σ` is denoted by `τ + σ`, `(σ + τ)(x) = σ(τ(x))`.
     ///
-    /// For example,
+    /// The composition of `τ` and `σ` is not commutative, you need to take care
+    /// of the order. `τ.compose(&σ)` means `τ + σ`, not `σ + τ`.
     ///
-    /// ```text
-    /// S1 = [t2: int]
-    /// S2 = [t1: int -> t2]
-    /// S1 ∘ S2 = [t2: int, t1: int -> int]
+    /// # Examples
+    ///
+    /// ```
+    /// # #[macro_use] extern crate type_infer_rs;
+    /// # use type_infer_rs::ty::{Ty, TyVar, subst::Subst};
+    ///
+    /// // S1 = [t2: int, t3: bool], S2 = [t1: int -> t2, t3: int]
+    /// let s1 = subst![
+    ///     TyVar::new("t2".to_string()) => Ty::mk_int(),
+    ///     TyVar::new("t3".to_string()) => Ty::mk_bool(),
+    /// ];
+    /// let s2 = subst![
+    ///     TyVar::new("t1".to_string()) =>
+    ///         Ty::mk_arrow(
+    ///             Ty::mk_int(),
+    ///             Ty::mk_var(TyVar::new("t2".to_string())),
+    ///         ),
+    ///    TyVar::new("t3".to_string()) => Ty::mk_int(),
+    /// ];
+    ///
+    /// // S1 + S2 = [t1: int -> int, t2: int, t3: int]
+    /// assert_eq!(s1.compose(&s2), subst![
+    ///     TyVar::new("t1".to_string()) =>
+    ///        Ty::mk_arrow(Ty::mk_int(), Ty::mk_int()),
+    ///     TyVar::new("t2".to_string()) => Ty::mk_int(),
+    ///     TyVar::new("t3".to_string()) => Ty::mk_int(),
+    /// ]);
     /// ```
     ///
-    /// Note that `S1 ∘ S2` is not just the union of the mappings in `S1` and
-    /// `S2`, i.e., it is not equal to `[t2 ↦ int, t1 ↦ int -> t2]`.
     pub fn compose(&self, other: &Subst) -> Subst {
-        let substituted = other.mapping
+        let mut subst = Subst::identity();
+
+        self.mapping.iter()
+            .for_each(|(var, ty)| subst.insert(var.clone(), ty.clone()));
+
+        other.mapping
             .iter()
-            .map(|(var, ty)| (var, ty.apply(self)));
-
-        let mut subst = Subst::new();
-
-        for (var, ty) in self.mapping.iter() {
-            subst.insert(var.clone(), ty.clone());
-        }
-
-        for (var, ty) in substituted {
-            subst.insert(var.clone(), ty);
-        }
+            .for_each(|(var, ty)| subst.insert(var.clone(), ty.apply(self)));
 
         subst
     }
@@ -79,7 +110,7 @@ impl fmt::Display for Subst {
 #[macro_export]
 macro_rules! subst {
     ($($var:expr => $ty:expr),* $(,)?) => {{
-        let mut subst = $crate::ty::subst::Subst::new();
+        let mut subst = $crate::ty::subst::Subst::identity();
         for (var, ty) in [$(($var, $ty),)*].into_iter() {
             subst.insert(var, ty);
         }
