@@ -42,8 +42,8 @@ impl Subst {
     }
 
     /// Removes a mapping from the substitution.
-    pub fn remove(&mut self, var: &TyVar) {
-        self.mapping.remove(var);
+    pub fn remove(&mut self, var: &TyVar) -> Option<Ty> {
+        self.mapping.remove(var)
     }
 
     /// Composes anonther substitution with this one.
