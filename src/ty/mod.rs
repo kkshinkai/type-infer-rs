@@ -4,10 +4,11 @@
 pub mod ty_ctxt;
 pub mod ty_scheme;
 pub mod subst;
+pub mod types;
 
-use std::fmt;
+use std::{fmt, collections::BTreeSet};
 
-use self::subst::Subst;
+use self::{subst::Subst, types::Types};
 
 #[derive(Debug, Clone, Eq, PartialEq, Ord, PartialOrd)]
 pub enum Ty {
@@ -35,8 +36,17 @@ impl Ty {
     }
 }
 
-impl Ty {
-    pub fn apply(&self, subst: &Subst) -> Ty {
+impl Types for Ty {
+    fn ftv(&self) -> BTreeSet<TyVar> {
+        match self {
+            Ty::Var(var) => BTreeSet::from([var.clone()]),
+            Ty::Int | Ty::Bool => BTreeSet::new(),
+            Ty::Arrow(param_ty, ret_ty) =>
+                param_ty.ftv().union(&ret_ty.ftv()).cloned().collect(),
+        }
+    }
+
+    fn apply(&self, subst: &Subst) -> Ty {
         match self {
             Ty::Var(name) => {
                 match subst.get(name) {

@@ -4,6 +4,7 @@
 use std::{collections::BTreeMap, fmt};
 
 use super::{TyVar, Ty};
+use crate::ty::types::Types;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct Subst {
@@ -40,6 +41,10 @@ impl Subst {
         self.mapping.insert(var, ty);
     }
 
+    /// Removes a mapping from the substitution.
+    pub fn remove(&mut self, var: &TyVar) {
+        self.mapping.remove(var);
+    }
 
     /// Composes anonther substitution with this one.
     ///
