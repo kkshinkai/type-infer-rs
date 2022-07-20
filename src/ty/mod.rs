@@ -2,6 +2,7 @@
 // root for license information.
 
 pub mod ty_ctxt;
+pub mod new_ty_ctxt;
 pub mod ty_scheme;
 pub mod subst;
 pub mod types;
