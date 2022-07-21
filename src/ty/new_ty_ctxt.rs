@@ -1,11 +1,11 @@
 // Copyright (c) Kk Shinkai. All Rights Reserved. See LICENSE.txt in the project
 // root for license information.
 
-use std::collections::{HashMap, BTreeSet};
+use std::collections::HashMap;
 
 use crate::expr::expr::Ident;
 
-use super::{ty_scheme::TyScheme, types::Types, TyVar, subst::Subst};
+use super::ty_scheme::TyScheme;
 
 #[derive(Debug)]
 pub struct TyCtxt {
@@ -42,24 +42,5 @@ impl TyCtxt {
             }
         }
         None
-    }
-}
-
-impl TyCtxt {
-    pub fn ftv(&self) -> BTreeSet<TyVar> {
-        self.frames
-            .iter()
-            .flat_map(|frame| frame.values())
-            .cloned()
-            .collect::<Vec<_>>()
-            .ftv()
-    }
-
-    pub fn apply(&mut self, subst: &Subst) {
-        for frame in  &mut self.frames {
-            for entry in frame.values_mut() {
-                entry.ty = entry.ty.apply(subst);
-            }
-        }
     }
 }

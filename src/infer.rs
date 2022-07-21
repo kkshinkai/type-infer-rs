@@ -3,7 +3,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{ty::{TyVar, new_ty_ctxt::TyCtxt, ty_scheme::TyScheme, Ty, types::Types, subst::Subst}, expr::{expr::{Expr, ExprKind}, lit::Lit}, error::{TyResult, TyError}};
+use crate::{ty::{TyVar, ty_ctxt::TyCtxt, ty_scheme::TyScheme, Ty, types::Types, subst::Subst}, expr::{expr::{Expr, ExprKind}, lit::Lit}, error::{TyResult, TyError}};
 
 pub struct InferCtxt {
     used_type_var_id: u32,
@@ -30,7 +30,7 @@ impl InferCtxt {
     /// ------------------------- (Gen)
     ///      Γ ⊢ e : ∀ α . σ
     /// ```
-    pub fn generalize(&self, tcx: &TyCtxt, ty: Ty) -> TyScheme {
+    pub fn generalize(&self, tcx: TyCtxt, ty: Ty) -> TyScheme {
         let vars = ty.ftv().difference(&tcx.ftv()).cloned().collect::<Vec<_>>();
         TyScheme::mk_forall(vars, ty)
     }
@@ -51,7 +51,7 @@ impl InferCtxt {
         tys.ty.apply(&subst)
     }
 
-    fn infer_impl(&mut self, tcx: &mut TyCtxt, expr: &Expr) -> TyResult<(Subst, Ty)> {
+    fn infer_impl(&mut self, tcx: TyCtxt, expr: &Expr) -> TyResult<(Subst, Ty)> {
         match expr.kind {
             // x : σ ∈ Γ
             // --------- (Var)
@@ -88,19 +88,15 @@ impl InferCtxt {
             // −−−−−−−−−−−−−−------- (Abs)
             // Γ ⊢ λ x . e : τ → τ′
             ExprKind::Abs { ref param, ref body } => {
-                tcx.new_scope();
-
                 // Add the new type variable of the parameter to the context,
                 // then infer the body with this new context.
                 let new_ty = Ty::mk_var(self.new_type_var());
-
-                tcx.add(
+                let mut new_tcx = tcx;
+                new_tcx.insert(
                     param.clone(),
                     TyScheme::mk_forall(vec![], new_ty.clone()),
                 );
-                let (subst, ty) = self.infer_impl(tcx, &body)?;
-
-                tcx.exit_scope();
+                let (subst, ty) = self.infer_impl(new_tcx, &body)?;
 
                 // FIXME: Remove this `clone` in `subst.clone()`.
                 Ok((subst.clone(), Ty::mk_arrow(new_ty.apply(&subst), ty)))
@@ -111,10 +107,8 @@ impl InferCtxt {
             //          Γ ⊢ e0(e1) : τ′
             ExprKind::App { ref callee, ref arg } => {
                 let new_ty = Ty::mk_var(self.new_type_var());
-                let (s1, ty1) = self.infer_impl(tcx, &callee)?;
-
-                tcx.apply(&s1);
-                let (s2, ty2) = self.infer_impl(tcx, &arg)?;
+                let (s1, ty1) = self.infer_impl(tcx.clone(), &callee)?;
+                let (s2, ty2) = self.infer_impl(tcx.apply(&s1), &arg)?;
                 let s3 = Subst::mgu(
                     ty1.apply(&s2),
                     Ty::mk_arrow(ty2, new_ty.clone()),
@@ -126,26 +120,18 @@ impl InferCtxt {
             // −------------−−−−−−−−−−−−−−−−−−−− (Let)
             //     Γ ⊢ let x = e0 in e1 : τ
             ExprKind::Let { ref name, ref value, ref body } => {
-                tcx.new_scope();
-
-                let (s1, t1) = self.infer_impl(tcx, &value)?;
-
-                tcx.apply(&s1);
-                let s = self.generalize(tcx, t1);
-
-                tcx.add(name.clone(), s.clone());
-
-                tcx.apply(&s1);
-                let (s2, t2) = self.infer_impl(tcx, &body)?;
-
-                tcx.exit_scope();
+                let (s1, t1) = self.infer_impl(tcx.clone(), &value)?;
+                let s = self.generalize(tcx.apply(&s1), t1);
+                let mut new_tcx = tcx;
+                new_tcx.insert(name.clone(), s.clone());
+                let (s2, t2) = self.infer_impl(new_tcx.apply(&s1), &body)?;
                 Ok((s2.compose(&s1), t2))
             },
         }
     }
 
     pub fn infer(&mut self, expr: &Expr) -> TyResult<Ty> {
-        let (s, t) = self.infer_impl(&mut TyCtxt::new(), expr)?;
+        let (s, t) = self.infer_impl(TyCtxt::new(), expr)?;
         Ok(t.apply(&s))
     }
 }

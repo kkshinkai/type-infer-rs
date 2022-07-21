@@ -7,7 +7,6 @@ use crate::expr::expr::Ident;
 
 use super::{TyVar, ty_scheme::TyScheme, types::Types, subst::Subst};
 
-#[deprecated]
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub struct TyCtxt {
     types: BTreeMap<Ident, TyScheme>,
