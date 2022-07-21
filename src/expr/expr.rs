@@ -3,7 +3,7 @@
 
 use std::fmt;
 
-use crate::{expr::expr_id::ExprId, ty::ty_cache::TyCache};
+use crate::expr::expr_id::ExprId;
 
 use super::lit::Lit;
 
@@ -95,38 +95,11 @@ impl fmt::Display for Expr {
             ExprKind::Lit(lit) =>
                 write!(f, "{}", lit),
             ExprKind::App { callee, arg } =>
-                write!(f, "{}({})", callee, arg),
+                write!(f, "(app {} {})", callee, arg),
             ExprKind::Abs { param, body } =>
-                write!(f, "fn {} -> {} end", param, body),
+                write!(f, "(abs {} -> {})", param, body),
             ExprKind::Let { name, value, body } =>
-                write!(f, "let {} = {} in {} end", name, value, body),
-        }
-    }
-}
-
-impl Expr {
-    pub fn typed_print(&self, cache: &TyCache) -> String {
-        match &self.kind {
-            ExprKind::Var(ident) =>
-                format!("{}[{}]", ident, cache.read(self.id).unwrap()),
-            ExprKind::Lit(lit) =>
-                format!("{}[{}]", lit, cache.read(self.id).unwrap()),
-            ExprKind::App { callee, arg } =>
-                format!("{}[{}]({}[{}])",
-                    callee.typed_print(cache), cache.read(self.id).unwrap(),
-                    arg.typed_print(cache), cache.read(arg.id).unwrap()
-                ),
-            ExprKind::Abs { param, body } =>
-                format!("fn {}[{}] -> {}[{}] end",
-                    param, cache.read(self.id).unwrap(),
-                    body.typed_print(cache), cache.read(body.id).unwrap(),
-                ),
-            ExprKind::Let { name, value, body } =>
-                format!("let {}[{}] = {}[{}] in {}[{}] end",
-                    name, cache.read(self.id).unwrap(),
-                    value.typed_print(cache), cache.read(value.id).unwrap(),
-                    body.typed_print(cache), cache.read(body.id).unwrap(),
-                ),
+                write!(f, "(let {} = {} in {})", name, value, body),
         }
     }
 }

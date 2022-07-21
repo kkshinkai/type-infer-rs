@@ -3,18 +3,16 @@
 
 use std::collections::BTreeMap;
 
-use crate::{ty::{TyVar, new_ty_ctxt::TyCtxt, ty_scheme::TyScheme, Ty, types::Types, subst::Subst, ty_cache::TyCache}, expr::{expr::{Expr, ExprKind}, lit::Lit}, error::{TyResult, TyError}};
+use crate::{ty::{TyVar, new_ty_ctxt::TyCtxt, ty_scheme::TyScheme, Ty, types::Types, subst::Subst}, expr::{expr::{Expr, ExprKind}, lit::Lit}, error::{TyResult, TyError}};
 
 pub struct InferCtxt {
     used_type_var_id: u32,
-    pub cache: TyCache,
 }
 
 impl InferCtxt {
     pub fn new() -> InferCtxt {
         InferCtxt {
             used_type_var_id: 0,
-            cache: TyCache::new(),
         }
     }
 
@@ -63,20 +61,18 @@ impl InferCtxt {
                 // the variable. If it doesn't then the variable must be
                 // unbound.
                 if let Some(tys) = tcx.get(name) {
-                    let ty = self.instantiate(tys.clone());
-                    self.cache.write(expr.id, ty.clone());
-                    Ok((Subst::identity(), ty))
+                    Ok((Subst::identity(), self.instantiate(tys.clone())))
                 } else {
                     Err(TyError::Unknown(format!("unbound variable {name}")))
                 }
             },
 
             ExprKind::Lit(ref lit) => {
-                let ty = match lit {
+                match lit {
                     //
                     // --−−−−−−−------- (Int)
                     // Γ ⊢ [0-9]+ : int
-                    Lit::Int(_) => Ty::mk_int(),
+                    Lit::Int(_) => Ok((Subst::identity(), Ty::mk_int())),
 
                     //
                     // --−−−−−−−------ (Bool)
@@ -84,12 +80,8 @@ impl InferCtxt {
                     //
                     // --−−−−−−−------- (Bool)
                     // Γ ⊢ false : bool
-                    Lit::Bool(_) => Ty::mk_bool(),
-                };
-
-                self.cache.write(expr.id, ty.clone());
-
-                Ok((Subst::identity(), ty))
+                    Lit::Bool(_) => Ok((Subst::identity(), Ty::mk_bool())),
+                }
             },
 
             //   Γ, x : τ ⊢ e : τ′
@@ -110,12 +102,8 @@ impl InferCtxt {
 
                 tcx.exit_scope();
 
-                let ty = Ty::mk_arrow(new_ty.apply(&subst), ty);
-
-                self.cache.write(expr.id, ty.clone());
-
                 // FIXME: Remove this `clone` in `subst.clone()`.
-                Ok((subst.clone(), ty))
+                Ok((subst.clone(), Ty::mk_arrow(new_ty.apply(&subst), ty)))
             },
 
             // Γ ⊢ e0 : τ → τ′   Γ ⊢ e1 : τ
@@ -131,8 +119,6 @@ impl InferCtxt {
                     ty1.apply(&s2),
                     Ty::mk_arrow(ty2, new_ty.clone()),
                 )?;
-
-                self.cache.write(expr.id, new_ty.clone());
                 Ok((s3.compose(&s2).compose(&s1), new_ty))
             },
 
@@ -153,8 +139,6 @@ impl InferCtxt {
                 let (s2, t2) = self.infer_impl(tcx, &body)?;
 
                 tcx.exit_scope();
-
-                self.cache.write(expr.id, t2.clone());
                 Ok((s2.compose(&s1), t2))
             },
         }

@@ -6,7 +6,7 @@ pub mod new_ty_ctxt;
 pub mod ty_scheme;
 pub mod subst;
 pub mod types;
-pub mod ty_cache;
+pub mod cache;
 
 use std::{fmt, collections::BTreeSet};
 
