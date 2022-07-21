@@ -113,7 +113,7 @@ impl InferCtxt {
                     ty1.apply(&s2),
                     Ty::mk_arrow(ty2, new_ty.clone()),
                 )?;
-                Ok((s3.compose(&s2).compose(&s1), new_ty))
+                Ok((s3.compose(&s2).compose(&s1), new_ty.apply(&s3)))
             },
 
             // Γ ⊢ e0 : σ     Γ, x : σ ⊢ e1 : τ
