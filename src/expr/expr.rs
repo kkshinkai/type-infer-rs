@@ -95,11 +95,11 @@ impl fmt::Display for Expr {
             ExprKind::Lit(lit) =>
                 write!(f, "{}", lit),
             ExprKind::App { callee, arg } =>
-                write!(f, "(app {} {})", callee, arg),
+                write!(f, "({} {})", callee, arg),
             ExprKind::Abs { param, body } =>
-                write!(f, "(abs {} -> {})", param, body),
+                write!(f, "λ {}. {}", param, body),
             ExprKind::Let { name, value, body } =>
-                write!(f, "(let {} = {} in {})", name, value, body),
+                write!(f, "let {} = {} in {}", name, value, body),
         }
     }
 }
