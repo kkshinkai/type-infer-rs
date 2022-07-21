@@ -17,7 +17,10 @@ fn main() {
         ),
         Expr::mk_app(
             Expr::mk_var(Ident::new("id".to_string())),
-            Expr::mk_lit(Lit::Int(42)),
+            Expr::mk_app(
+                Expr::mk_var(Ident::new("id".to_string())),
+                Expr::mk_lit(Lit::Int(42)),
+            ),
         ),
     ).assign_ids();
 

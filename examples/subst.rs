@@ -17,6 +17,7 @@ fn main() {
     ];
 
     let subst2 = subst![
+        TyVar::new("a".to_string()) => Ty::mk_bool(),
         TyVar::new("c".to_string()) => Ty::Var(TyVar::new("b".to_string())),
     ];
 
